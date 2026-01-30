@@ -11,32 +11,50 @@ st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe
 # 更新後的終極版 CSS
 hide_style = """
     <style>
-    /* 之前的隱藏設定保持不變 */
+    /* 隱藏系統元件 */
     [data-testid="stStatusWidget"], .stStatusWidget { display: none !important; }
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     .block-container { padding-top: 2rem !important; }
 
-    /* --- 修正：黑底白字標題樣式 --- */
+    /* 1. 頂部黑底白字標題 */
     .custom-title {
-        background-color: #1E1E1E; /* 深黑灰色背景 */
-        color: #FFFFFF !important;  /* 強制指定為白色字體 */
+        background-color: #1E1E1E;
+        color: #FFFFFF !important;
         font-size: 22px !important;
         font-weight: 700;
         text-align: center;
-        padding: 15px 10px;        /* 增加上下左右的間距 */
-        border-radius: 12px;       /* 增加圓角感 */
+        padding: 15px 10px;
+        border-radius: 12px;
         margin-bottom: 25px;
-        line-height: 1.2;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 增加一點點陰影更有深度 */
     }
-    
+
+    /* 2. 日期出席列 (稍微深一點的灰色，做出層次) */
+    .record-box {
+        background-color: #333333; /* 深灰色背景 */
+        color: #FFFFFF !important;  /* 白色文字 */
+        padding: 10px 15px;
+        border-radius: 10px 10px 0 0; /* 上方圓角 */
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        margin-top: 15px;
+    }
+
+    /* 3. 教學內容區 (把文字變白，並加個邊框線) */
+    .content-box {
+        background-color: #262626; /* 比標題列更深一點的黑 */
+        color: #E0E0E0 !important;  /* 淺灰色文字，讀起來較舒服 */
+        padding: 12px 15px;
+        border-radius: 0 0 10px 10px; /* 下方圓角 */
+        line-height: 1.6;
+        border: 1px solid #333333; /* 淡淡的邊框 */
+        margin-bottom: 10px;
+    }
+
     @media (max-width: 600px) {
-        .custom-title {
-            font-size: 18px !important; /* 手機版再縮小一點點確保不換行 */
-            padding: 12px 8px;
-        }
+        .custom-title { font-size: 18px !important; }
     }
     </style>
 """
