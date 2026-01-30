@@ -8,49 +8,50 @@ st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", lay
 st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe_allow_html=True)
 
 # 隱藏右上的 Running 狀態與選單
-# 更新後的終極版 CSS
+# 強化版 CSS：強制執行黑底白字，防止被系統覆蓋
 hide_style = """
     <style>
-    /* 隱藏系統元件 */
+    /* 1. 隱藏系統元件 (維持不變) */
     [data-testid="stStatusWidget"], .stStatusWidget { display: none !important; }
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     .block-container { padding-top: 2rem !important; }
 
-    /* 1. 頂部黑底白字標題 */
+    /* 2. 頂部標題：強制黑底白字 */
     .custom-title {
-        background-color: #1E1E1E;
-        color: #FFFFFF !important;
+        background-color: #1E1E1E !important; /* 強制背景為深黑 */
+        color: #FFFFFF !important;            /* 強制字體為純白 */
         font-size: 22px !important;
-        font-weight: 700;
-        text-align: center;
-        padding: 15px 10px;
-        border-radius: 12px;
-        margin-bottom: 25px;
+        font-weight: 700 !important;
+        text-align: center !important;
+        padding: 15px 10px !important;
+        border-radius: 12px !important;
+        margin-bottom: 25px !important;
+        display: block !important;           /* 確保區塊完整顯示 */
     }
 
-    /* 2. 日期出席列 (稍微深一點的灰色，做出層次) */
+    /* 3. 日期出席列 */
     .record-box {
-        background-color: #333333; /* 深灰色背景 */
-        color: #FFFFFF !important;  /* 白色文字 */
-        padding: 10px 15px;
-        border-radius: 10px 10px 0 0; /* 上方圓角 */
-        font-weight: bold;
-        display: flex;
-        justify-content: space-between;
-        margin-top: 15px;
+        background-color: #333333 !important;
+        color: #FFFFFF !important;
+        padding: 10px 15px !important;
+        border-radius: 10px 10px 0 0 !important;
+        font-weight: bold !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        margin-top: 15px !important;
     }
 
-    /* 3. 教學內容區 (把文字變白，並加個邊框線) */
+    /* 4. 教學內容區 */
     .content-box {
-        background-color: #262626; /* 比標題列更深一點的黑 */
-        color: #E0E0E0 !important;  /* 淺灰色文字，讀起來較舒服 */
-        padding: 12px 15px;
-        border-radius: 0 0 10px 10px; /* 下方圓角 */
-        line-height: 1.6;
-        border: 1px solid #333333; /* 淡淡的邊框 */
-        margin-bottom: 10px;
+        background-color: #262626 !important;
+        color: #E0E0E0 !important;
+        padding: 12px 15px !important;
+        border-radius: 0 0 10px 10px !important;
+        line-height: 1.6 !important;
+        border: 1px solid #333333 !important;
+        margin-bottom: 10px !important;
     }
 
     @media (max-width: 600px) {
