@@ -11,27 +11,31 @@ st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe
 # 更新後的終極版 CSS
 hide_style = """
     <style>
-    /* 隱藏 Running 狀態與選單 */
+    /* 之前的隱藏設定保持不變 */
     [data-testid="stStatusWidget"], .stStatusWidget { display: none !important; }
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
-    .block-container { padding-top: 1rem !important; }
+    .block-container { padding-top: 2rem !important; }
 
-    /* --- 新增：自定義標題樣式 --- */
+    /* --- 修正：黑底白字標題樣式 --- */
     .custom-title {
-        font-size: 24px !important; /* 電腦版大小 */
+        background-color: #1E1E1E; /* 深黑灰色背景 */
+        color: #FFFFFF !important;  /* 強制指定為白色字體 */
+        font-size: 22px !important;
         font-weight: 700;
-        color: #31333F;
         text-align: center;
-        margin-bottom: 20px;
+        padding: 15px 10px;        /* 增加上下左右的間距 */
+        border-radius: 12px;       /* 增加圓角感 */
+        margin-bottom: 25px;
         line-height: 1.2;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 增加一點點陰影更有深度 */
     }
     
-    /* 當螢幕寬度小於 600px (手機) 時，自動縮小字體 */
     @media (max-width: 600px) {
         .custom-title {
-            font-size: 20px !important; /* 手機版大小 */
+            font-size: 18px !important; /* 手機版再縮小一點點確保不換行 */
+            padding: 12px 8px;
         }
     }
     </style>
