@@ -6,6 +6,21 @@ import pandas as pd
 st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="⚽", layout="centered")
 st.title("🏀 JQT 訓練營查詢系統")
 
+# 隱藏右上的 Running 狀態與選單
+hide_style = """
+    <style>
+    /* 隱藏右上角的 Running 狀態圖示 */
+    [data-testid="stStatusWidget"] {
+        visibility: hidden;
+    }
+    /* 隱藏標題的連結圖示 (選配) */
+    .viewerBadge_link__1S137 {
+        display: none !important;
+    }
+    </style>
+"""
+st.markdown(hide_style, unsafe_allow_html=True)
+
 # 2. 建立 Google Sheets 連線
 conn = st.connection("gsheets", type=GSheetsConnection)
 
