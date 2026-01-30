@@ -8,29 +8,31 @@ st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", lay
 st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe_allow_html=True)
 
 # 隱藏右上的 Running 狀態與選單
-# 終極版：隱藏 Running 狀態、選單、頂部裝飾條
+# 更新後的終極版 CSS
 hide_style = """
     <style>
-    /* 1. 隱藏右上角 Running 狀態 (包含旋轉圖示與文字) */
-    [data-testid="stStatusWidget"], .stStatusWidget {
-        display: none !important;
-        height: 0px !important;
-        width: 0px !important;
-        opacity: 0 !important;
+    /* 隱藏 Running 狀態與選單 */
+    [data-testid="stStatusWidget"], .stStatusWidget { display: none !important; }
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .block-container { padding-top: 1rem !important; }
+
+    /* --- 新增：自定義標題樣式 --- */
+    .custom-title {
+        font-size: 24px !important; /* 電腦版大小 */
+        font-weight: 700;
+        color: #31333F;
+        text-align: center;
+        margin-bottom: 20px;
+        line-height: 1.2;
     }
     
-    /* 2. 隱藏右上角選單按鈕 (三個點) */
-    #MainMenu {visibility: hidden;}
-    
-    /* 3. 隱藏頂部裝飾條 (那個薄薄的彩色橫條) */
-    header {visibility: hidden;}
-    
-    /* 4. 隱藏頁尾 "Made with Streamlit" */
-    footer {visibility: hidden;}
-    
-    /* 5. 修正頂部空白，讓標題往上提 */
-    .block-container {
-        padding-top: 2rem !important;
+    /* 當螢幕寬度小於 600px (手機) 時，自動縮小字體 */
+    @media (max-width: 600px) {
+        .custom-title {
+            font-size: 20px !important; /* 手機版大小 */
+        }
     }
     </style>
 """
