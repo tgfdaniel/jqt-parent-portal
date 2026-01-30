@@ -4,7 +4,8 @@ import pandas as pd
 
 # 1. 網頁標題與樣式設定
 st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
-st.title("JQT 訓練營查詢系統")
+# 用 Markdown 搭配剛才定義的 class 來顯示標題
+st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe_allow_html=True)
 
 # 隱藏右上的 Running 狀態與選單
 # 終極版：隱藏 Running 狀態、選單、頂部裝飾條
