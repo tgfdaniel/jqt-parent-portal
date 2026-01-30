@@ -3,19 +3,33 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
 # 1. 網頁標題與樣式設定
-st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="⚽", layout="centered")
-st.title("🏀 JQT 訓練營查詢系統")
+st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
+st.title("JQT 訓練營查詢系統")
 
 # 隱藏右上的 Running 狀態與選單
+# 終極版：隱藏 Running 狀態、選單、頂部裝飾條
 hide_style = """
     <style>
-    /* 隱藏右上角的 Running 狀態圖示 */
-    [data-testid="stStatusWidget"] {
-        visibility: hidden;
-    }
-    /* 隱藏標題的連結圖示 (選配) */
-    .viewerBadge_link__1S137 {
+    /* 1. 隱藏右上角 Running 狀態 (包含旋轉圖示與文字) */
+    [data-testid="stStatusWidget"], .stStatusWidget {
         display: none !important;
+        height: 0px !important;
+        width: 0px !important;
+        opacity: 0 !important;
+    }
+    
+    /* 2. 隱藏右上角選單按鈕 (三個點) */
+    #MainMenu {visibility: hidden;}
+    
+    /* 3. 隱藏頂部裝飾條 (那個薄薄的彩色橫條) */
+    header {visibility: hidden;}
+    
+    /* 4. 隱藏頁尾 "Made with Streamlit" */
+    footer {visibility: hidden;}
+    
+    /* 5. 修正頂部空白，讓標題往上提 */
+    .block-container {
+        padding-top: 2rem !important;
     }
     </style>
 """
