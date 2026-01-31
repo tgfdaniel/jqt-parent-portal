@@ -91,7 +91,7 @@ try:
                 student_name = s['學員姓名']
                 student_class = s['班別']
                 
-                st.success(f"✅ 您好，{student_name} 同學的家長")
+                st.success(f"✅ 您好，{student_name} 同學/同學家長")
                         
                 # 顯示數據卡片
                 c1, c2 = st.columns(2)
