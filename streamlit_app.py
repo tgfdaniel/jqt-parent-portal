@@ -2,36 +2,32 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. 網頁標題與樣式設定
+# 1. 網頁基礎設定
 st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
-# 用 Markdown 搭配剛才定義的 class 來顯示標題
-st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe_allow_html=True)
 
-# 隱藏右上的 Running 狀態與選單
-# 強化版 CSS：強制執行黑底白字，防止被系統覆蓋
-hide_style = """
+# --- 終極版 CSS (包含黑底、文字顏色、隱藏元件) ---
+st.markdown("""
     <style>
-    /* 1. 隱藏系統元件 (維持不變) */
     [data-testid="stStatusWidget"], .stStatusWidget { display: none !important; }
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     .block-container { padding-top: 2rem !important; }
 
-    /* 2. 頂部標題：強制黑底白字 */
+    /* 標題樣式 */
     .custom-title {
-        background-color: #1E1E1E !important; /* 強制背景為深黑 */
-        color: #FFFFFF !important;            /* 強制字體為純白 */
+        background-color: #1E1E1E !important;
+        color: #FFFFFF !important;
         font-size: 22px !important;
         font-weight: 700 !important;
         text-align: center !important;
         padding: 15px 10px !important;
         border-radius: 12px !important;
         margin-bottom: 25px !important;
-        display: block !important;           /* 確保區塊完整顯示 */
+        display: block !important;
     }
 
-    /* 3. 日期出席列 */
+    /* 紀錄列樣式 */
     .record-box {
         background-color: #333333 !important;
         color: #FFFFFF !important;
@@ -43,7 +39,7 @@ hide_style = """
         margin-top: 15px !important;
     }
 
-    /* 4. 教學內容區 */
+    /* 內容區樣式 */
     .content-box {
         background-color: #262626 !important;
         color: #E0E0E0 !important;
@@ -58,21 +54,22 @@ hide_style = """
         .custom-title { font-size: 18px !important; }
     }
     </style>
-"""
-st.markdown(hide_style, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
+
+st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe_allow_html=True)
 
 # 2. 建立 Google Sheets 連線
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
     # --- A. 讀取資料 ---
-    df_stu = conn.read(worksheet="學員總表", ttl=0)
+    df_stu = conn.read(worksheet="學員總表", ttl=0).dropna(how='all')
     df_stu.columns = [str(c).strip() for c in df_stu.columns]
     
-    df_att = conn.read(worksheet="點名紀錄", ttl=0)
+    df_att = conn.read(worksheet="點名紀錄", ttl=0).dropna(how='all')
     df_att.columns = [str(c).strip() for c in df_att.columns]
 
-    df_log = conn.read(worksheet="教學日誌", ttl=0)
+    df_log = conn.read(worksheet="教學日誌", ttl=0).dropna(how='all')
     df_log.columns = [str(c).strip() for c in df_log.columns]
 
     # --- B. 查詢介面 ---
@@ -80,91 +77,58 @@ try:
     user_id = st.text_input("學員身分證字號", placeholder="例如: A123456789").strip().upper()
     submit_btn = st.button("確認查詢")
 
-    # --- C. 搜尋與顯示邏輯 (這裡的縮排必須對齊) ---
-    if submit_btn:
-        if user_id:
-            # 搜尋學員
-            match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
+    # --- C. 搜尋與顯示邏輯 ---
+    if submit_btn and user_id:
+        match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
 
-            if not match.empty:
-                s = match.iloc[0]
-                student_name = s['學員姓名']
-                student_class = s['班別']
-                
-                st.success(f"✅ 您好，{student_name} 同學/同學家長")
-                        
-                # 顯示數據卡片
-                c1, c2 = st.columns(2)
-                c1.metric("目前班別", student_class)
-                try:
-                    lessons = int(float(s['剩餘堂數']))
-                except:
-                    lessons = s['剩餘堂數']
-                c2.metric("剩餘總堂數", f"{lessons} 堂")
-                
-                st.divider()
-                
-                # --- 整合表格區 ---
-                st.subheader("📋 上課紀錄與教學內容")
-
-                # 1. 篩選點名紀錄
-                p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
-
-                # 2. 篩選班別教學日誌
-                class_logs = df_log[df_log['班別'] == student_class][['日期', '今日教學內容']]
-
-                # 3. 合併資料 (根據日期)
-                merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
-
-                if not merged_df.empty:
-                    # 排序：新的在上面
-                    merged_df = merged_df.sort_values(by='日期', ascending=False)
-
-                    # 格式化出席狀態
-                    merged_df['出席狀態'] = merged_df['出席'].apply(
-                        lambda x: "✅ 出席" if str(x) in ["1", "1.0", "1"] else "❌ 未出席"
-                    )
+        if not match.empty:
+            s = match.iloc[0]
+            student_name = s['學員姓名']
+            student_class = s['班別']
+            
+            st.success(f"✅ 您好，{student_name} 同學/家長")
                     
-                    # 處理空內容
-                    merged_df['今日教學內容'] = merged_df['今日教學內容'].fillna("教練尚未填寫日誌")
+            c1, c2 = st.columns(2)
+            c1.metric("目前班別", student_class)
+            try:
+                lessons = int(float(s['剩餘堂數']))
+            except:
+                lessons = s['剩餘堂數']
+            c2.metric("剩餘總堂數", f"{lessons} 堂")
+            
+            st.divider()
+            st.subheader("📋 上課紀錄與教學內容")
 
-                    # --- 1. 定義灰底樣式 (CSS) ---
-                    st.markdown("""
-                        <style>
-                        .record-box {
-                            background-color: #f0f2f6;
-                            padding: 10px 15px;
-                            border-radius: 10px;
-                            font-weight: bold;
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            color: #31333F;
-                            margin-top: 15px;
-                        }
-                        .content-box {
-                            padding: 10px 15px 5px 15px;
-                            line-height: 1.6;
-                            color: #555;
-                        }
-                        </style>
-                    """, unsafe_allow_html=True)
+            # 1. 篩選點名紀錄 (避免重複日期)
+            p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
+            p_att = p_att.drop_duplicates(subset=['日期']) # 防止同一天顯示兩次
 
-                    # --- 2. 循環顯示卡片 ---
+            # 2. 篩選班別教學日誌 (避免重複日期)
+            class_logs = df_log[df_log['班別'] == student_class][['日期', '今日教學內容']]
+            class_logs = class_logs.drop_duplicates(subset=['日期'])
+
+            # 3. 合併資料
+            merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
+
+            if not merged_df.empty:
+                merged_df = merged_df.sort_values(by='日期', ascending=False)
+
+                # --- 4. 循環顯示卡片 (確保縮排在 if 內) ---
                 for index, row in merged_df.iterrows():
-                    # A. 灰底標題列 (日期 + 出席)
+                    # 處理出席顯示
+                    status_text = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
+                    
+                    # 灰底標題列
                     st.markdown(f"""
                         <div class="record-box">
                             <span>📅 {row['日期']}</span>
-                            <span>{row['出席狀態']}</span>
+                            <span>{status_text}</span>
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # B. 處理個人評語 (從點名紀錄撈取)
-                    # 假設欄位名稱為 "個人評語"
+                    # 處理個人評語
                     coach_comment_html = ""
-                    comment_val = row.get('個人評語', "") # 避免欄位不存在報錯
-                    
+                    comment_val = row.get('個人評語', "")
                     if pd.notna(comment_val) and str(comment_val).strip() != "":
                         coach_comment_html = f"""
                         <div style="margin-top: 12px; padding: 10px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
@@ -173,25 +137,26 @@ try:
                         </div>
                         """
                     
-                    # C. 教學內容區塊 (包含班級內容與個人評語)
+                    # 內容區塊
+                    log_content = row['今日教學內容'] if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
                     st.markdown(f"""
                         <div class="content-box">
                             <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">🌟 班級教學重點：</div>
-                            <div style="color: #E0E0E0;">{row['今日教學內容']}</div>
+                            <div style="color: #E0E0E0;">{log_content}</div>
                             {coach_comment_html}
                         </div>
                     """, unsafe_allow_html=True)
                     
                     st.divider()
-                else:
-                    st.info("目前尚無上課點名紀錄。")
             else:
-                st.error("❌ 查無資料，請核對身分證字號。")
+                st.info("目前尚無上課點名紀錄。")
         else:
-            st.warning("⚠️ 請先輸入身分證字號。")
+            st.error("❌ 查無資料，請核對身分證字號。")
+    elif submit_btn and not user_id:
+        st.warning("⚠️ 請先輸入身分證字號。")
 
 except Exception as e:
     st.error("⚠️ 系統讀取錯誤")
-    st.exception(e) # 這行能幫我們抓到還有哪個欄位名稱不對
+    st.exception(e)
 
 st.caption("© 2026 靖騰整合行銷有限公司")
