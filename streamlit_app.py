@@ -151,36 +151,38 @@ try:
                     """, unsafe_allow_html=True)
 
                     # --- 2. 循環顯示卡片 ---
-                    for index, row in merged_df.iterrows():
-                        # 灰底標題列 (日期 + 出席)
-                        st.markdown(f"""
-                            <div class="record-box">
-                                <span>📅 {row['日期']}</span>
-                                <span>{row['出席狀態']}</span>
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # 教學內容與個人評語區
-                        # 增加一個判斷：如果有評語才顯示評語區塊
-                        coach_comment = ""
-                        # 假設你的欄位名稱是 "個人評語"
-                        if pd.notna(row.get('個人評語')) and row['個人評語'] != "":
-                            coach_comment = f"""
-                            <div style="margin-top: 10px; padding: 8px; background-color: #3d3d3d; border-radius: 5px; border-left: 4px solid #FFD700;">
-                                <span style="color: #FFD700; font-size: 0.8rem; font-weight: bold;">💡 教練評語：</span><br>
-                                <span style="color: #FFFFFF;">{row['個人評語']}</span>
-                            </div>
-                            """
-
-                        st.markdown(f"""
-                            <div class="content-box">
-                                <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">🌟 班級教學重點：</div>
-                                {row['今日教學內容']}
-                                {coach_comment}
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.divider()
+                for index, row in merged_df.iterrows():
+                    # A. 灰底標題列 (日期 + 出席)
+                    st.markdown(f"""
+                        <div class="record-box">
+                            <span>📅 {row['日期']}</span>
+                            <span>{row['出席狀態']}</span>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # B. 處理個人評語 (從點名紀錄撈取)
+                    # 假設欄位名稱為 "個人評語"
+                    coach_comment_html = ""
+                    comment_val = row.get('個人評語', "") # 避免欄位不存在報錯
+                    
+                    if pd.notna(comment_val) and str(comment_val).strip() != "":
+                        coach_comment_html = f"""
+                        <div style="margin-top: 12px; padding: 10px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
+                            <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 3px;">💡 教練個人評語：</div>
+                            <div style="color: #FFFFFF; font-size: 0.95rem;">{comment_val}</div>
+                        </div>
+                        """
+                    
+                    # C. 教學內容區塊 (包含班級內容與個人評語)
+                    st.markdown(f"""
+                        <div class="content-box">
+                            <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px;">🌟 班級教學重點：</div>
+                            <div style="color: #E0E0E0;">{row['今日教學內容']}</div>
+                            {coach_comment_html}
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.divider()
                 else:
                     st.info("目前尚無上課點名紀錄。")
             else:
