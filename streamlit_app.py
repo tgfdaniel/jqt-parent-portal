@@ -77,59 +77,7 @@ try:
     user_id = st.text_input("學員身分證字號", placeholder="例如: A123456789").strip().upper()
     submit_btn = st.button("確認查詢")
 
-    # --- C. 搜尋與顯示邏輯 (請確保這段縮排在 submit_btn 內) ---
-    if submit_btn and user_id:
-        match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
-
-        if not match.empty:
-            s = match.iloc[0]
-            student_name = s['學員姓名']
-            student_class = s['班別']
-            
-            st.success(f"✅ 您好，{student_name} 同學/家長")
-                    
-            c1, c2 = st.columns(2)
-            c1.metric("目前班別", student_class)
-            try:
-                lessons = int(float(s['剩餘堂數']))
-            except:
-                lessons = s['剩餘堂數']
-            c2.metric("剩餘總堂數", f"{lessons} 堂")
-            
-            st.divider()
-            st.subheader("📋 上課紀錄與教學內容")
-
-            # 1. 資料處理：篩選並移除重複日期 (解決同一天顯示兩次的問題)
-            p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
-            p_att = p_att.drop_duplicates(subset=['日期']) 
-
-            class_logs = df_log[df_log['班別'] == student_class][['日期', '今日教學內容']]
-            class_logs = class_logs.drop_duplicates(subset=['日期'])
-
-            # 2. 合併資料
-            merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
-
-            if not merged_df.empty:
-                merged_df = merged_df.sort_values(by='日期', ascending=False)
-
-                # --- 3. 循環顯示卡片 (確保這段縮排在 if not merged_df.empty: 內) ---
-                for index, row in merged_df.iterrows():
-                    # A. 處理出席圖示與內容文字
-                    status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
-                    log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
-                    personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
-
-                    # B. 組合個人評語 HTML (如果有內容才顯示)
-                    comment_html = ""
-                    if personal_comment.strip():
-                        comment_html = f"""
-                        <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
-                            <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
-                            <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5;">{personal_comment}</div>
-                        </div>
-                        """
-
-                    # (前段 CSS 與連線設定保持不變...)
+    # (前段 CSS 與連線設定保持不變...)
 
 # --- C. 搜尋與顯示邏輯 ---
 if submit_btn:
