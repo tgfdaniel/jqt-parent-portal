@@ -112,36 +112,30 @@ try:
             if not merged_df.empty:
                 merged_df = merged_df.sort_values(by='日期', ascending=False)
 
-                # 3. 循環顯示卡片
+                # --- 3. 循環顯示卡片 (確保這段縮排在 if not merged_df.empty: 內) ---
                 for index, row in merged_df.iterrows():
-                    # 判斷出席圖示
+                    # A. 處理出席圖示與內容文字
                     status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
-                    
-                    # --- A. 灰底標題列 ---
-                    st.markdown(f"""
-                        <div class="record-box">
-                            <span>📅 {row['日期']}</span>
-                            <span>{status_icon}</span>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # --- B. 處理個人評語 (從點名紀錄撈取) ---
+                    log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
+                    personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
+
+                    # B. 組合個人評語 HTML (如果有內容才顯示)
                     comment_html = ""
-                    personal_comment = row.get('個人評語', "")
-                    
-                    # 如果評語不是空的，才渲染金色框框
-                    if pd.notna(personal_comment) and str(personal_comment).strip() != "":
+                    if personal_comment.strip():
                         comment_html = f"""
                         <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
                             <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
                             <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5;">{personal_comment}</div>
                         </div>
                         """
-                    
-                    # --- C. 教學內容區塊 (包含班級內容與個人評語) ---
-                    log_text = row['今日教學內容'] if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
-                    
+
+                    # C. 一次性渲染整張卡片 (解決跑出程式碼的問題)
+                    # 務必確認最後有 unsafe_allow_html=True 參數
                     st.markdown(f"""
+                        <div class="record-box">
+                            <span>📅 {row['日期']}</span>
+                            <span>{status_icon}</span>
+                        </div>
                         <div class="content-box">
                             <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
                             <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
@@ -149,7 +143,7 @@ try:
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    st.divider()
+                    st.divider() # 卡片間的分隔線
             else:
                 st.info("目前尚無上課點名紀錄。")
         else:
