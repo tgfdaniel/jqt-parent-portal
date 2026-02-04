@@ -106,24 +106,24 @@ try:
             if not merged_df.empty:
                 merged_df = merged_df.sort_values(by='日期', ascending=False)
 
-                # --- 3. 循環顯示卡片 ---
+                # --- 3. 循環顯示卡片 (修正標籤不顯示問題) ---
                 for index, row in merged_df.iterrows():
                     status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
                     log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
                     personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
 
-                    # ** 修正點：先組合好評語的 HTML 部分 **
-                    comment_block = ""
+                    # 先準備好「評語區塊」的 HTML (如果有評語才產生)
+                    comment_html = ""
                     if personal_comment.strip():
-                        comment_block = f"""
+                        comment_html = f"""
                         <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
                             <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
                             <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
                         </div>
                         """
 
-                    # ** 修正點：一次性把整張卡片拼成一個字串，避免 Streamlit 解析錯誤 **
-                    full_card_html = f"""
+                    # 把「整張卡片」拼起來，確保標籤完全成對
+                    full_card_code = f"""
                     <div class="record-box">
                         <span>📅 {row['日期']}</span>
                         <span>{status_icon}</span>
@@ -131,12 +131,13 @@ try:
                     <div class="content-box">
                         <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
                         <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
-                        {comment_block}
+                        {comment_html}
                     </div>
                     """
                     
-                    # 用唯一的 st.markdown 輸出，確保參數正確
-                    st.markdown(full_card_html, unsafe_allow_html=True)
+                    # 關鍵：只有這裡需要 unsafe_allow_html
+                    st.markdown(full_card_code, unsafe_allow_html=True)
+                    
                     st.divider()
             else:
                 st.info("目前尚無上課點名紀錄。")
