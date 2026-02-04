@@ -5,7 +5,7 @@ import pandas as pd
 # 1. 網頁基礎設定
 st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
 
-# --- 終極版 CSS (黑底、隱藏元件、自定義標題) ---
+# --- 終極版 CSS ---
 st.markdown("""
     <style>
     [data-testid="stStatusWidget"], .stStatusWidget { display: none !important; }
@@ -55,8 +55,8 @@ st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe
 # 2. 建立 Google Sheets 連線
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- A. 讀取資料 (放在 try 裡面確保安全) ---
 try:
+    # --- A. 讀取資料 ---
     df_stu = conn.read(worksheet="學員總表", ttl=0).dropna(how='all')
     df_stu.columns = [str(c).strip() for c in df_stu.columns]
     
@@ -71,12 +71,11 @@ try:
     user_id = st.text_input("學員身分證字號", placeholder="例如: A123456789").strip().upper()
     submit_btn = st.button("確認查詢")
 
-    # --- C. 搜尋與顯示邏輯 (重點：全部都要縮排在 try 裡面) ---
+    # --- C. 搜尋與顯示邏輯 ---
     if submit_btn:
         if not user_id:
             st.warning("⚠️ 請先輸入身分證字號。")
         else:
-            # 搜尋學員
             match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
 
             if not match.empty:
@@ -116,37 +115,37 @@ try:
                         log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
                         personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
 
-                        # B. 組合個人評語 HTML (加上 white-space: pre-wrap 確保換行)
-                    comment_html = ""
-                    if personal_comment.strip():
-                        comment_html = f"""
-                        <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
-                            <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
-                            <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
-                        </div>
-                        """
+                        # 處理個人評語 HTML (加上 pre-wrap 確保換行)
+                        comment_html = ""
+                        if personal_comment.strip():
+                            comment_html = f"""
+                            <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
+                                <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
+                                <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
+                            </div>
+                            """
 
-                    # C. 一次性渲染 (請務必檢查這整段括號跟參數)
-                    st.markdown(f"""
-                        <div class="record-box">
-                            <span>📅 {row['日期']}</span>
-                            <span>{status_icon}</span>
-                        </div>
-                        <div class="content-box">
-                            <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
-                            <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
-                            {comment_html}
-                        </div>
-                    """, unsafe_allow_html=True)
-                        st.divider()
+                        # 渲染整張卡片
+                        st.markdown(f"""
+                            <div class="record-box">
+                                <span>📅 {row['日期']}</span>
+                                <span>{status_icon}</span>
+                            </div>
+                            <div class="content-box">
+                                <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
+                                <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
+                                {comment_html}
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        st.divider() # 這裡的縮排現在是正確的
                 else:
                     st.info("目前尚無上課點名紀錄。")
             else:
                 st.error("❌ 查無資料，請核對身分證字號。")
 
-# 這裡才是 try 的結束
 except Exception as e:
-    st.error("⚠️ 系統讀取錯誤，請檢查試算表欄位名稱")
+    st.error("⚠️ 系統讀取錯誤")
     st.exception(e)
 
 st.caption("© 2026 靖騰整合行銷有限公司")
