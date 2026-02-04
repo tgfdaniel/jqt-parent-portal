@@ -129,8 +129,64 @@ try:
                         </div>
                         """
 
-                    # C. 一次性渲染整張卡片 (解決跑出程式碼的問題)
-                    # 務必確認最後有 unsafe_allow_html=True 參數
+                    # (前段 CSS 與連線設定保持不變...)
+
+# --- C. 搜尋與顯示邏輯 ---
+if submit_btn:
+    if not user_id:
+        st.warning("⚠️ 請先輸入身分證字號。")
+    else:
+        match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
+
+        if not match.empty:
+            s = match.iloc[0]
+            student_name = s['學員姓名']
+            student_class = s['班別']
+            
+            st.success(f"✅ 您好，{student_name} 同學/家長")
+                    
+            c1, c2 = st.columns(2)
+            c1.metric("目前班別", student_class)
+            try:
+                # 處理剩餘堂數，轉為整數
+                lessons = int(float(s['剩餘堂數']))
+            except:
+                lessons = s['剩餘堂數']
+            c2.metric("剩餘總堂數", f"{lessons} 堂")
+            
+            st.divider()
+            st.subheader("📋 上課紀錄與教學內容")
+
+            # 1. 資料處理：篩選並移除重複日期
+            p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
+            p_att = p_att.drop_duplicates(subset=['日期']) 
+
+            class_logs = df_log[df_log['班別'] == student_class][['日期', '今日教學內容']]
+            class_logs = class_logs.drop_duplicates(subset=['日期'])
+
+            # 2. 合併資料
+            merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
+
+            if not merged_df.empty:
+                merged_df = merged_df.sort_values(by='日期', ascending=False)
+
+                # 3. 循環顯示卡片
+                for index, row in merged_df.iterrows():
+                    status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
+                    log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
+                    personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
+
+                    # 組合個人評語 HTML
+                    comment_html = ""
+                    if personal_comment.strip():
+                        comment_html = f"""
+                        <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
+                            <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
+                            <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5;">{personal_comment}</div>
+                        </div>
+                        """
+
+                    # 一次性渲染整張卡片
                     st.markdown(f"""
                         <div class="record-box">
                             <span>📅 {row['日期']}</span>
@@ -143,11 +199,13 @@ try:
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    st.divider() # 卡片間的分隔線
+                    st.divider() 
             else:
                 st.info("目前尚無上課點名紀錄。")
         else:
             st.error("❌ 查無資料，請核對身分證字號。")
+
+# (頁尾標籤保持不變...)
 
 except Exception as e:
     st.error("⚠️ 系統讀取錯誤")
