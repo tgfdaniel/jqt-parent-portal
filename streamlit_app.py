@@ -110,35 +110,36 @@ try:
                     merged_df = merged_df.sort_values(by='日期', ascending=False)
 
                     # 3. 循環顯示卡片
-                    for index, row in merged_df.iterrows():
-                        status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
-                        log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
-                        personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
+                    # --- 這裡是你程式碼中循環顯示卡片的部分 ---
+for index, row in merged_df.iterrows():
+    status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
+    log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
+    personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
 
-                        # 處理個人評語 HTML (加上 pre-wrap 確保換行)
-                        comment_html = ""
-                        if personal_comment.strip():
-                            comment_html = f"""
-                            <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
-                                <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
-                                <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
-                            </div>
-                            """
+    # 1. 組合個人評語 HTML (加上 white-space: pre-wrap 解決 1 2 3 換行問題)
+    comment_html = ""
+    if personal_comment.strip():
+        comment_html = f"""
+        <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
+            <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
+            <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
+        </div>
+        """
 
-                        # 渲染整張卡片
-                        st.markdown(f"""
-                            <div class="record-box">
-                                <span>📅 {row['日期']}</span>
-                                <span>{status_icon}</span>
-                            </div>
-                            <div class="content-box">
-                                <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
-                                <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
-                                {comment_html}
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.divider() # 這裡的縮排現在是正確的
+    # 2. 一次性渲染整張卡片 (關鍵在最後一行的參數)
+    st.markdown(f"""
+        <div class="record-box">
+            <span>📅 {row['日期']}</span>
+            <span>{status_icon}</span>
+        </div>
+        <div class="content-box">
+            <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
+            <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
+            {comment_html}
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.divider()
                 else:
                     st.info("目前尚無上課點名紀錄。")
             else:
