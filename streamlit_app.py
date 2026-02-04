@@ -116,26 +116,28 @@ try:
                         log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
                         personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
 
-                        comment_html = ""
-                        if personal_comment.strip():
-                            comment_html = f"""
-                            <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
-                                <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
-                                <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5;">{personal_comment}</div>
-                            </div>
-                            """
+                        # B. 組合個人評語 HTML (加上 white-space: pre-wrap 確保換行)
+                    comment_html = ""
+                    if personal_comment.strip():
+                        comment_html = f"""
+                        <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
+                            <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
+                            <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
+                        </div>
+                        """
 
-                        st.markdown(f"""
-                            <div class="record-box">
-                                <span>📅 {row['日期']}</span>
-                                <span>{status_icon}</span>
-                            </div>
-                            <div class="content-box">
-                                <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
-                                <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
-                                {comment_html}
-                            </div>
-                        """, unsafe_allow_html=True)
+                    # C. 一次性渲染 (請務必檢查這整段括號跟參數)
+                    st.markdown(f"""
+                        <div class="record-box">
+                            <span>📅 {row['日期']}</span>
+                            <span>{status_icon}</span>
+                        </div>
+                        <div class="content-box">
+                            <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
+                            <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
+                            {comment_html}
+                        </div>
+                    """, unsafe_allow_html=True)
                         st.divider()
                 else:
                     st.info("目前尚無上課點名紀錄。")
