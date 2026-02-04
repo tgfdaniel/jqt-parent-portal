@@ -77,7 +77,7 @@ try:
     user_id = st.text_input("學員身分證字號", placeholder="例如: A123456789").strip().upper()
     submit_btn = st.button("確認查詢")
 
-    # --- C. 搜尋與顯示邏輯 ---
+    # --- C. 搜尋與顯示邏輯 (請確保縮排完全正確) ---
     if submit_btn and user_id:
         match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
 
@@ -99,45 +99,37 @@ try:
             st.divider()
             st.subheader("📋 上課紀錄與教學內容")
 
-            # 1. 篩選點名紀錄 (避免重複日期)
+            # 1. 篩選與去重 (解決重複顯示問題)
             p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
-            p_att = p_att.drop_duplicates(subset=['日期']) # 防止同一天顯示兩次
+            p_att = p_att.drop_duplicates(subset=['日期']) 
 
-            # 2. 篩選班別教學日誌 (避免重複日期)
             class_logs = df_log[df_log['班別'] == student_class][['日期', '今日教學內容']]
             class_logs = class_logs.drop_duplicates(subset=['日期'])
 
-            # 3. 合併資料
+            # 2. 合併資料
             merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
 
             if not merged_df.empty:
                 merged_df = merged_df.sort_values(by='日期', ascending=False)
 
-                # --- 4. 循環顯示卡片 (確保縮排在 if 內) ---
+                # 3. 循環顯示卡片
                 for index, row in merged_df.iterrows():
-                    # 處理出席顯示
                     status_text = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
                     
-                    # 灰底標題列
-                    st.markdown(f"""
-                        <div class="record-box">
-                            <span>📅 {row['日期']}</span>
-                            <span>{status_text}</span>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    # A. 標題列
+                    st.markdown(f"""<div class="record-box"><span>📅 {row['日期']}</span><span>{status_text}</span></div>""", unsafe_allow_html=True)
                     
-                    # 處理個人評語
+                    # B. 處理個人評語
                     coach_comment_html = ""
                     comment_val = row.get('個人評語', "")
                     if pd.notna(comment_val) and str(comment_val).strip() != "":
                         coach_comment_html = f"""
-                        <div style="margin-top: 12px; padding: 10px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
+                        <div style="margin-top: 10px; padding: 10px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
                             <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 3px;">💡 教練個人評語：</div>
-                            <div style="color: #FFFFFF; font-size: 0.95rem;">{comment_val}</div>
-                        </div>
-                        """
+                            <div style="color: #FFFFFF;">{comment_val}</div>
+                        </div>"""
                     
-                    # 內容區塊
+                    # C. 教學內容區
                     log_content = row['今日教學內容'] if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
                     st.markdown(f"""
                         <div class="content-box">
@@ -146,7 +138,6 @@ try:
                             {coach_comment_html}
                         </div>
                     """, unsafe_allow_html=True)
-                    
                     st.divider()
             else:
                 st.info("目前尚無上課點名紀錄。")
