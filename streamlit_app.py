@@ -55,8 +55,8 @@ st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe
 # 2. 建立 Google Sheets 連線
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- A. 進入 try 區塊 (確保所有邏輯都在縮排內) ---
 try:
+    # --- A. 讀取資料 ---
     df_stu = conn.read(worksheet="學員總表", ttl=0).dropna(how='all')
     df_stu.columns = [str(c).strip() for c in df_stu.columns]
     
@@ -72,80 +72,81 @@ try:
     submit_btn = st.button("確認查詢")
 
     # --- C. 搜尋與顯示邏輯 ---
-    if submit_btn:
-        if not user_id:
-            st.warning("⚠️ 請先輸入身分證字號。")
-        else:
-            match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
+    if submit_btn and user_id:
+        match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
 
-            if not match.empty:
-                s = match.iloc[0]
-                student_name = s['學員姓名']
-                student_class = s['班別']
-                
-                st.success(f"✅ 您好，{student_name} 同學/家長")
-                        
-                c1, c2 = st.columns(2)
-                c1.metric("目前班別", student_class)
-                try:
-                    lessons = int(float(s['剩餘堂數']))
-                except:
-                    lessons = s['剩餘堂數']
-                c2.metric("剩餘總堂數", f"{lessons} 堂")
-                
-                st.divider()
-                st.subheader("📋 上課紀錄與教學內容")
+        if not match.empty:
+            s = match.iloc[0]
+            student_name = s['學員姓名']
+            student_class = s['班別']
+            
+            st.success(f"✅ 您好，{student_name} 同學/家長")
+                    
+            c1, c2 = st.columns(2)
+            c1.metric("目前班別", student_class)
+            try:
+                lessons = int(float(s['剩餘堂數']))
+            except:
+                lessons = s['剩餘堂數']
+            c2.metric("剩餘總堂數", f"{lessons} 堂")
+            
+            st.divider()
+            st.subheader("📋 上課紀錄與教學內容")
 
-                # 1. 篩選與去重
-                p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
-                p_att = p_att.drop_duplicates(subset=['日期']) 
+            # 1. 資料處理：篩選並移除重複日期
+            p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
+            p_att = p_att.drop_duplicates(subset=['日期']) 
 
-                class_logs = df_log[df_log['班別'] == student_class][['日期', '今日教學內容']]
-                class_logs = class_logs.drop_duplicates(subset=['日期'])
+            class_logs = df_log[df_log['班別'] == student_class][['日期', '今日教學內容']]
+            class_logs = class_logs.drop_duplicates(subset=['日期'])
 
-                # 2. 合併資料
-                merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
+            # 2. 合併資料
+            merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
 
-                if not merged_df.empty:
-                    merged_df = merged_df.sort_values(by='日期', ascending=False)
+            if not merged_df.empty:
+                merged_df = merged_df.sort_values(by='日期', ascending=False)
 
-                    # 3. 循環顯示卡片
-                    for index, row in merged_df.iterrows():
-                        status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
-                        log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
-                        personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
+                # --- 3. 循環顯示卡片 ---
+                for index, row in merged_df.iterrows():
+                    status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
+                    log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
+                    personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
 
-                        # 組合個人評語 HTML ( white-space: pre-wrap 確保 1 2 3 會換行)
-                        comment_html = ""
-                        if personal_comment.strip():
-                            comment_html = f"""
-                            <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
-                                <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
-                                <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
-                            </div>
-                            """
+                    # ** 修正點：先組合好評語的 HTML 部分 **
+                    comment_block = ""
+                    if personal_comment.strip():
+                        comment_block = f"""
+                        <div style="margin-top: 15px; padding: 12px; background-color: #3d3d3d; border-radius: 8px; border-left: 5px solid #FFD700;">
+                            <div style="color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">💡 教練個人評語：</div>
+                            <div style="color: #FFFFFF; font-size: 1rem; line-height: 1.5; white-space: pre-wrap;">{personal_comment}</div>
+                        </div>
+                        """
 
-                        # 一次性渲染，確保最後有加 unsafe_allow_html=True 參數
-                        st.markdown(f"""
-                            <div class="record-box">
-                                <span>📅 {row['日期']}</span>
-                                <span>{status_icon}</span>
-                            </div>
-                            <div class="content-box">
-                                <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
-                                <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
-                                {comment_html}
-                            </div>
-                        """, unsafe_allow_html=True)
-                        st.divider()
-                else:
-                    st.info("目前尚無上課點名紀錄。")
+                    # ** 修正點：一次性把整張卡片拼成一個字串，避免 Streamlit 解析錯誤 **
+                    full_card_html = f"""
+                    <div class="record-box">
+                        <span>📅 {row['日期']}</span>
+                        <span>{status_icon}</span>
+                    </div>
+                    <div class="content-box">
+                        <div style="color: #AAAAAA; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px;">🌟 班級教學重點：</div>
+                        <div style="color: #E0E0E0; white-space: pre-wrap;">{log_text}</div>
+                        {comment_block}
+                    </div>
+                    """
+                    
+                    # 用唯一的 st.markdown 輸出，確保參數正確
+                    st.markdown(full_card_html, unsafe_allow_html=True)
+                    st.divider()
             else:
-                st.error("❌ 查無資料，請核對身分證字號。")
+                st.info("目前尚無上課點名紀錄。")
+        else:
+            st.error("❌ 查無資料，請核對身分證字號。")
+    elif submit_btn and not user_id:
+        st.warning("⚠️ 請先輸入身分證字號。")
 
 except Exception as e:
     st.error("⚠️ 系統讀取錯誤")
     st.exception(e)
 
-# 檔案最末端只能有這行
 st.caption("© 2026 靖騰整合行銷有限公司")
