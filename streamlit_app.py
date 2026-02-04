@@ -6,17 +6,23 @@ import pandas as pd
 st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
 
 # --- CSS 樣式設定 ---
-# --- 修正後的 CSS 樣式片段 ---
 st.markdown("""
 <style>
-/* ... 其他樣式保持不變 ... */
+[data-testid="stStatusWidget"] { display: none !important; }
+#MainMenu, header, footer {visibility: hidden;}
+.block-container { padding-top: 2rem !important; }
+.custom-title {
+    background-color: #1E1E1E; color: #FFFFFF; font-size: 22px; font-weight: 700;
+    text-align: center; padding: 15px; border-radius: 12px; margin-bottom: 25px;
+}
+.record-box {
+    background-color: #333333; color: #FFFFFF; padding: 10px 15px;
+    border-radius: 10px 10px 0 0; font-weight: bold; display: flex;
+    justify-content: space-between; margin-top: 15px;
+}
 .content-box {
-    background-color: #262626; 
-    color: #E0E0E0; 
-    padding: 12px 15px;
-    border-radius: 0 0 10px 10px; 
-    line-height: 1.4 !important; /* 調小行高，讓排版更緊湊 */
-    border: 1px solid #333333;
+    background-color: #262626; color: #E0E0E0; padding: 12px 15px;
+    border-radius: 0 0 10px 10px; line-height: 1.6; border: 1px solid #333333;
 }
 </style>
 """, unsafe_allow_html=True)
