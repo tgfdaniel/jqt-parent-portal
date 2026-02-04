@@ -5,24 +5,63 @@ import pandas as pd
 # 1. 網頁基礎設定
 st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
 
-# --- CSS 樣式設定 ---
+# --- 終極修正版 CSS ---
 st.markdown("""
 <style>
 [data-testid="stStatusWidget"] { display: none !important; }
 #MainMenu, header, footer {visibility: hidden;}
-.block-container { padding-top: 2rem !important; }
+.block-container { padding-top: 2rem !important; background-color: #0E1117; }
+
+/* 標題樣式 */
 .custom-title {
-    background-color: #1E1E1E; color: #FFFFFF; font-size: 22px; font-weight: 700;
-    text-align: center; padding: 15px; border-radius: 12px; margin-bottom: 25px;
+    background-color: #1E1E1E !important;
+    color: #FFFFFF !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
+    margin-bottom: 25px !important;
 }
+
+/* 紀錄標題列 (灰底) */
 .record-box {
-    background-color: #333333; color: #FFFFFF; padding: 10px 15px;
-    border-radius: 10px 10px 0 0; font-weight: bold; display: flex;
-    justify-content: space-between; margin-top: 15px;
+    background-color: #333333 !important;
+    color: #FFFFFF !important;
+    padding: 10px 15px !important;
+    border-radius: 10px 10px 0 0 !important;
+    font-weight: bold !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 15px !important;
 }
+
+/* 紀錄內容區 (深黑底) */
 .content-box {
-    background-color: #262626; color: #E0E0E0; padding: 12px 15px;
-    border-radius: 0 0 10px 10px; line-height: 1.6; border: 1px solid #333333;
+    background-color: #262626 !important;
+    color: #E0E0E0 !important;
+    padding: 15px !important;
+    border-radius: 0 0 10px 10px !important;
+    border: 1px solid #333333 !important;
+    margin-bottom: 10px !important;
+}
+
+/* 教學內容文字區：縮小行距與字體 */
+.log-text {
+    color: #E0E0E0 !important;
+    white-space: pre-wrap !important;
+    line-height: 1.3 !important; /* 縮小行距 */
+    font-size: 0.95rem !important;
+    margin-top: 5px !important;
+}
+
+/* 評語框 */
+.comment-box {
+    margin-top: 15px; 
+    padding: 12px; 
+    background-color: #3d3d3d; 
+    border-radius: 8px; 
+    border-left: 5px solid #FFD700;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -32,6 +71,7 @@ st.markdown('<div class="custom-title">🏀 JQT 訓練營查詢系統</div>', un
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
+    # 讀取資料
     df_stu = conn.read(worksheet="學員總表", ttl=0).dropna(how='all')
     df_stu.columns = [str(c).strip() for c in df_stu.columns]
     df_att = conn.read(worksheet="點名紀錄", ttl=0).dropna(how='all')
@@ -49,14 +89,11 @@ try:
             s = match.iloc[0]
             st.success(f"✅ 您好，{s['學員姓名']} 同學/家長")
             
-            # --- 核心修正：消除小數點 ---
+            # --- 修正：剩餘堂數去掉小數點 ---
             try:
-                # 先轉 float 處理像 "10.0" 的字串，再轉 int 去掉小數點
                 clean_lessons = int(float(s['剩餘堂數']))
             except:
-                # 如果萬一欄位裡填的是「尚未開課」之類的文字，就保持原樣
                 clean_lessons = s['剩餘堂數']
-            # --------------------------
 
             c1, c2 = st.columns(2)
             c1.metric("目前班別", s['班別'])
@@ -71,23 +108,31 @@ try:
 
             for index, row in merged_df.iterrows():
                 status = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
-                log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
-                p_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
+                # 清除教學內容首尾空白
+                log_text = str(row['今日教學內容']).strip() if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
+                p_comment = str(row.get('個人評語', "")).strip() if pd.notna(row.get('個人評語')) else ""
 
-                # 準備評語 HTML (縮排全部靠左，防止被誤判為代碼塊)
                 comment_html = ""
-                if p_comment.strip():
-                    comment_html = f'<div style="margin-top:15px;padding:12px;background-color:#3d3d3d;border-radius:8px;border-left:5px solid #FFD700;"><div style="color:#FFD700;font-size:0.85rem;font-weight:bold;margin-bottom:5px;">💡 教練個人評語：</div><div style="color:#FFFFFF;font-size:1rem;line-height:1.5;white-space:pre-wrap;">{p_comment}</div></div>'
+                if p_comment:
+                    comment_html = f"""
+                    <div class="comment-box">
+                        <div style="color:#FFD700;font-size:0.85rem;font-weight:bold;margin-bottom:5px;">💡 教練個人評語：</div>
+                        <div style="color:#FFFFFF;font-size:0.95rem;white-space:pre-wrap;line-height:1.3;">{p_comment}</div>
+                    </div>
+                    """
 
-                # 一次性輸出完整卡片
+                # 渲染完整卡片
                 st.markdown(f"""
-<div class="record-box"><span>📅 {row['日期']}</span><span>{status}</span></div>
-<div class="content-box">
-<div style="color:#AAAAAA;font-size:0.8rem;font-weight:bold;margin-bottom:8px;">🌟 班級教學重點：</div>
-<div style="color:#E0E0E0;white-space:pre-wrap;">{log_text}</div>
-{comment_html}
-</div>
-""", unsafe_allow_html=True)
+                <div class="record-box">
+                    <span>📅 {row['日期']}</span>
+                    <span>{status}</span>
+                </div>
+                <div class="content-box">
+                    <div style="color:#AAAAAA; font-size:0.8rem; font-weight:bold; margin-bottom:5px;">🌟 班級教學重點：</div>
+                    <div class="log-text">{log_text}</div>
+                    {comment_html}
+                </div>
+                """, unsafe_allow_html=True)
                 st.divider()
         else:
             st.error("❌ 查無資料")
