@@ -55,7 +55,7 @@ st.markdown('<p class="custom-title">🏀 JQT 訓練營查詢系統</p>', unsafe
 # 2. 建立 Google Sheets 連線
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- A. 進入 try 區塊 (確保讀取資料與顯示邏輯都在裡面) ---
+# --- A. 進入 try 區塊 (確保所有邏輯都在縮排內) ---
 try:
     df_stu = conn.read(worksheet="學員總表", ttl=0).dropna(how='all')
     df_stu.columns = [str(c).strip() for c in df_stu.columns]
@@ -96,7 +96,7 @@ try:
                 st.divider()
                 st.subheader("📋 上課紀錄與教學內容")
 
-                # 1. 資料處理：篩選並移除重複日期
+                # 1. 篩選與去重
                 p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
                 p_att = p_att.drop_duplicates(subset=['日期']) 
 
@@ -109,13 +109,13 @@ try:
                 if not merged_df.empty:
                     merged_df = merged_df.sort_values(by='日期', ascending=False)
 
-                    # 3. 循環顯示卡片 (確保縮排對齊)
+                    # 3. 循環顯示卡片
                     for index, row in merged_df.iterrows():
                         status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
                         log_text = str(row['今日教學內容']) if pd.notna(row['今日教學內容']) else "教練尚未填寫日誌"
                         personal_comment = str(row.get('個人評語', "")) if pd.notna(row.get('個人評語')) else ""
 
-                        # 處理個人評語 HTML ( white-space: pre-wrap 確保 1 2 3 會換行)
+                        # 組合個人評語 HTML ( white-space: pre-wrap 確保 1 2 3 會換行)
                         comment_html = ""
                         if personal_comment.strip():
                             comment_html = f"""
@@ -125,7 +125,7 @@ try:
                             </div>
                             """
 
-                        # 渲染整張卡片
+                        # 一次性渲染，確保最後有加 unsafe_allow_html=True 參數
                         st.markdown(f"""
                             <div class="record-box">
                                 <span>📅 {row['日期']}</span>
@@ -143,10 +143,9 @@ try:
             else:
                 st.error("❌ 查無資料，請核對身分證字號。")
 
-# --- D. 結束 try 並加入 except ---
 except Exception as e:
     st.error("⚠️ 系統讀取錯誤")
     st.exception(e)
 
-# 頁尾標籤 (獨立於 try-except 之外)
+# 檔案最末端只能有這行
 st.caption("© 2026 靖騰整合行銷有限公司")
