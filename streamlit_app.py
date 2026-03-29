@@ -32,7 +32,7 @@ st.markdown('<div class="custom-title">🏀 JQT 訓練營查詢系統</div>', un
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
-    # 1. 讀取資料
+    # 1. 讀取三張核心表
     df_stu = conn.read(worksheet="學員總表", ttl=0).dropna(how='all')
     df_stu.columns = [str(c).strip() for c in df_stu.columns]
     
@@ -42,18 +42,20 @@ try:
     df_log = conn.read(worksheet="教學日誌", ttl=0).dropna(how='all')
     df_log.columns = [str(c).strip() for c in df_log.columns]
 
-    # --- 核心修正 A：強制日期格式統一 (防止 3/28 與 3/29 混淆) ---
-    def clean_date(df):
+    # --- 核心修正 A：統一日期與場地格式 (防止匹配不到) ---
+    def standardize_df(df):
         if '日期' in df.columns:
-            # errors='coerce' 會把不合法的日期變成空值，避免程式崩潰
-            df['日期'] = pd.to_datetime(df['日期'], errors='coerce').dt.date
+            df['日期'] = pd.to_datetime(df['日期']).dt.date # 強制轉為 YYYY-MM-DD
+        if '場地' in df.columns:
+            df['場地'] = df['場地'].astype(str).str.strip()
+        if '班別' in df.columns:
+            df['班別'] = df['班別'].astype(str).str.strip()
         return df
 
-    df_att = clean_date(df_att)
-    df_log = clean_date(df_log)
+    df_att = standardize_df(df_att)
+    df_log = standardize_df(df_log)
 
     # 2. 查詢介面
-    st.write("請輸入學員的身分證字號進行查詢")
     user_id = st.text_input("學員身分證字號", placeholder="例如: A123456789").strip().upper()
     submit_btn = st.button("確認查詢")
 
@@ -63,64 +65,70 @@ try:
         if not match.empty:
             s = match.iloc[0]
             student_name = s['學員姓名']
-            student_class = str(s['班別']).strip() # 抓取學生正確的班別
+            student_venue = str(s['場地']).strip()  # 關鍵：抓取學生的場地
+            student_class = str(s['班別']).strip()  # 關鍵：抓取學生的班別
             
             st.success(f"✅ 您好，{student_name} 同學/家長")
             
-            # 堂數轉換
+            # 堂數轉換 (處理小數點問題)
             try:
                 clean_lessons = int(float(s['剩餘堂數']))
             except:
                 clean_lessons = s['剩餘堂數']
 
             c1, c2 = st.columns(2)
-            c1.metric("目前班別", student_class)
+            c1.metric("目前班別", f"{student_venue} - {student_class}")
             c2.metric("剩餘堂數", f"{clean_lessons} 堂")
             
             st.divider()
             st.subheader("📋 上課紀錄與教學內容")
 
-            # --- 核心修正 B：精準合併邏輯 ---
+            # --- 核心修正 B：雙欄位精準合併 (日期 + 場地 + 班別) ---
             
-            # A. 抓點名紀錄 (確保日期已經過標準化)
+            # A. 取得該學員的點名紀錄
             p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
             
-            # B. 抓日誌：必須「班別」與「日期」同時對齊
-            # 這裡先篩選出該學員所屬的班別，避免抓到別場的日誌
-            class_logs = df_log[df_log['班別'].astype(str).str.strip() == student_class].copy()
-            class_logs = class_logs[['日期', '今日教學內容']].drop_duplicates(subset=['日期'])
+            # B. 取得對應的教學日誌 (必須同時符合該學員的場地與班別)
+            # 避免抓到左營場的內容給小港場的學員
+            filtered_logs = df_log[
+                (df_log['場地'] == student_venue) & 
+                (df_log['班別'] == student_class)
+            ].copy()
+            
+            # 簡化日誌表，準備合併
+            filtered_logs = filtered_logs[['日期', '今日教學內容']].drop_duplicates(subset=['日期'])
 
-            # C. 執行合併 (on='日期')
-            merged_df = pd.merge(p_att, class_logs, on='日期', how='left')
+            # C. 以「日期」為唯一 Key 進行左合併
+            merged_df = pd.merge(p_att, filtered_logs, on='日期', how='left')
             merged_df = merged_df.sort_values(by='日期', ascending=False)
 
             if not merged_df.empty:
                 for index, row in merged_df.iterrows():
-                    status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "1"] else "❌ 未出席"
+                    status_icon = "✅ 出席" if str(row['出席']) in ["1", "1.0", "TRUE", "True"] else "❌ 未出席"
                     
-                    # 抓取日誌內容
-                    log_text = str(row['今日教學內容']).strip() if pd.notna(row['今日教學內容']) else "教練尚未填寫今日教學重點"
+                    # 抓取對應日期的教學內容
+                    log_text = str(row['今日教學內容']).strip() if pd.notna(row['今日教學內容']) else "今日教練尚未上傳班級教學重點"
                     p_comment = str(row.get('個人評語', "")).strip() if pd.notna(row.get('個人評語')) else ""
 
                     # 評語 HTML
                     comment_html = ""
                     if p_comment:
-                        comment_html = f'<div style="margin-top:15px;padding:12px;background-color:#3d3d3d;border-radius:8px;border-left:5px solid #FFD700;"><div style="color:#FFD700;font-size:0.85rem;font-weight:bold;margin-bottom:5px;">💡 教練個人評語：</div><div style="color:#FFFFFF;font-size:1rem;line-height:1.5;white-space:pre-wrap;">{p_comment}</div></div>'
+                        comment_html = f'<div style="margin-top:15px;padding:12px;background-color:#3d3d3d;border-radius:8px;border-left:5px solid #FFD700;"><div style="color:#FFD700;font-size:0.85rem;font-weight:bold;margin-bottom:5px;">💡 教練個人評語：</div><div style="color:#FFFFFF;font-size:1rem;line-height:1.4;white-space:pre-wrap;">{p_comment}</div></div>'
 
-                    # 顯示卡片
+                    # 渲染顯示卡片
                     st.markdown(f"""
                         <div class="record-box"><span>📅 {row['日期']}</span><span>{status_icon}</span></div>
                         <div class="content-box">
                         <div style="color:#AAAAAA;font-size:0.8rem;font-weight:bold;margin-bottom:8px;">🌟 班級教學重點：</div>
-                        <div style="color:#E0E0E0;white-space:pre-wrap;line-height:1.4;">{log_text}</div>
+                        <div style="color:#E0E0E0;white-space:pre-wrap;line-height:1.3;font-size:0.95rem;">{log_text}</div>
                         {comment_html}
                         </div>
                     """, unsafe_allow_html=True)
                     st.divider()
             else:
-                st.info("目前尚無上課紀錄。")
+                st.info("目前尚無上課點名紀錄。")
         else:
-            st.error("❌ 查無資料")
+            st.error("❌ 查無資料，請核對身分證字號。")
 except Exception as e:
     st.error("⚠️ 系統讀取錯誤")
     st.exception(e)
