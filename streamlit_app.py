@@ -12,7 +12,7 @@ st.markdown("""
 #MainMenu, header, footer {visibility: hidden;}
 .block-container { padding-top: 2rem !important; }
 .custom-title {
-    background-color: #1E1E1E; color: #FFFFFF; font-size: 22px; font-weight: 700;
+    background-color: #1E1E1E; color: #FFFFFF; font-size: 18px; font-weight: 700;
     text-align: center; padding: 15px; border-radius: 12px; margin-bottom: 25px;
 }
 .record-box {
