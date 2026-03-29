@@ -65,8 +65,8 @@ try:
         if not match.empty:
             s = match.iloc[0]
             student_name = s['學員姓名']
-            student_venue = str(s['場地']).strip()  # 關鍵：抓取學生的場地
-            student_class = str(s['班別']).strip()  # 關鍵：抓取學生的班別
+            student_venue = str(s['場地']).strip()  # 取得場地
+            student_class = str(s['班別']).strip()  # 取得班別
             
             st.success(f"✅ 您好，{student_name} 同學/家長")
             
@@ -76,24 +76,32 @@ try:
             except:
                 clean_lessons = s['剩餘堂數']
 
-            c1, c2 = st.columns(2)
-            c1.metric("目前班別", f"{student_venue} - {student_class}")
-            c2.metric("剩餘堂數", f"{clean_lessons} 堂")
+            # --- 修改：改為三欄式顯示 ---
+            c1, c2, c3 = st.columns(3)
+            c1.metric("場地", student_venue)
+            c2.metric("目前班別", student_class)
+            c3.metric("剩餘堂數", f"{clean_lessons} 堂")
             
             st.divider()
             st.subheader("📋 上課紀錄與教學內容")
 
-            # --- 核心修正 B：雙欄位精準合併 (日期 + 場地 + 班別) ---
+            # --- 核心邏輯：精準合併 (日期 + 場地 + 班別) ---
             
             # A. 取得該學員的點名紀錄
             p_att = df_att[df_att['身分證字號'].astype(str).str.upper() == user_id].copy()
             
-            # B. 取得對應的教學日誌 (必須同時符合該學員的場地與班別)
-            # 避免抓到左營場的內容給小港場的學員
+            # B. 取得對應的教學日誌 (嚴格比對場地與班別)
             filtered_logs = df_log[
                 (df_log['場地'] == student_venue) & 
                 (df_log['班別'] == student_class)
             ].copy()
+            
+            # 簡化日誌表
+            filtered_logs = filtered_logs[['日期', '今日教學內容']].drop_duplicates(subset=['日期'])
+
+            # C. 執行合併
+            merged_df = pd.merge(p_att, filtered_logs, on='日期', how='left')
+            merged_df = merged_df.sort_values(by='日期', ascending=False)
             
             # 簡化日誌表，準備合併
             filtered_logs = filtered_logs[['日期', '今日教學內容']].drop_duplicates(subset=['日期'])
