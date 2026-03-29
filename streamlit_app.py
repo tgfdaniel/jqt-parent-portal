@@ -8,11 +8,20 @@ st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", lay
 # --- CSS 樣式設定 ---
 st.markdown("""
 <style>
+/* 這是調整「場地、目前班別」下方具體內容的字體大小 */
+[data-testid="stMetricValue"] {
+    font-size: 1.2rem !important; 
+}
+
+/* 這是調整上方小標籤（場地、目前班別）的字體大小 */
+[data-testid="stMetricLabel"] {
+    font-size: 0.8rem !important;
+}
 [data-testid="stStatusWidget"] { display: none !important; }
 #MainMenu, header, footer {visibility: hidden;}
 .block-container { padding-top: 2rem !important; }
 .custom-title {
-    background-color: #1E1E1E; color: #FFFFFF; font-size: 18px; font-weight: 700;
+    background-color: #1E1E1E; color: #FFFFFF; font-size: 22px; font-weight: 700;
     text-align: center; padding: 15px; border-radius: 12px; margin-bottom: 25px;
 }
 .record-box {
