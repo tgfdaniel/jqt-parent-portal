@@ -3,7 +3,7 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
 # 1. 網頁基礎設定
-st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
+st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="", layout="centered")
 
 # --- CSS 樣式設定 ---
 st.markdown("""
@@ -28,7 +28,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="custom-title">🏆 JQT 訓練營查詢系統</div>', unsafe_allow_html=True)
+st.markdown('<div class="custom-title"> JQT 訓練營查詢系統</div>', unsafe_allow_html=True)
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
