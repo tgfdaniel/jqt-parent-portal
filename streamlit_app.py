@@ -5,7 +5,7 @@ import pandas as pd
 # 1. 網頁基礎設定
 st.set_page_config(page_title="JQT 訓練營查詢系統", page_icon="🏀", layout="centered")
 
-# --- 終極版 CSS 樣式設定 ---
+# --- CSS 樣式設定 ---
 st.markdown("""
 <style>
 [data-testid="stStatusWidget"] { display: none !important; }
@@ -48,10 +48,10 @@ try:
         if '球類別' in df.columns and '類別' not in df.columns:
             df.rename(columns={'球類別': '類別'}, inplace=True)
 
-    # 資料標準化清洗
+    # 安全資料標準化清洗 (加入 errors='coerce' 防止空白日期崩潰)
     def standardize_df(df):
         if '日期' in df.columns:
-            df['日期'] = pd.to_datetime(df['日期']).dt.date
+            df['日期'] = pd.to_datetime(df['日期'], errors='coerce').dt.date
         for col in ['類別', '場地', '班別', '時段']:
             if col in df.columns:
                 df[col] = df[col].astype(str).str.strip()
@@ -67,28 +67,34 @@ try:
     submit_btn = st.button("確認查詢")
 
     if submit_btn and user_id:
-        # 尋找學員總表中所有符合身分證的列 (可能有多列)
+        # 尋找學員總表中所有符合身分證的列
         match = df_stu[df_stu['身分證字號'].astype(str).str.upper() == user_id]
 
         if not match.empty:
             student_name = match.iloc[0]['學員姓名']
             st.success(f"✅ 您好，{student_name} 同學/家長")
-            st.info(f"💡 系統偵測到您共報名了 {len(match)} 個課程項目，請點擊下方展開查看：")
             
-            # --- 核心邏輯升級：巡迴渲染該學員的所有課程 ---
+            if len(match) > 1:
+                st.info(f"💡 系統偵測到您共報名了 {len(match)} 個課程項目，請點擊下方展開查看：")
+            
+            # --- 核心邏輯：巡迴渲染該學員的所有課程 ---
             for index, s in match.iterrows():
-                student_cat = s['類別']
-                student_venue = s['場地']
-                student_class = s['班別']
-                student_time = s['時段']
+                student_cat = str(s.get('類別', '')).strip()
+                student_venue = str(s.get('場地', '')).strip()
+                student_class = str(s.get('班別', '')).strip()
+                student_time = str(s.get('時段', '')).strip()
                 
                 try:
                     clean_lessons = int(float(s['剩餘堂數']))
                 except:
-                    clean_lessons = s['剩餘堂數']
+                    clean_lessons = s.get('剩餘堂數', 0)
 
-                # 為每個課程建立專屬的 Expander 卡片
-                with st.expander(f"✨【{student_cat}】{student_class} ({student_time})", expanded=True):
+                # 建立動態卡片標題
+                card_title = f"✨【{student_cat}】{student_class}" if student_cat else f"✨ {student_class}"
+                if student_time and student_time != "nan":
+                    card_title += f" ({student_time})"
+
+                with st.expander(card_title, expanded=True):
                     
                     # 2x2 指標矩陣排版
                     row1_c1, row1_c2 = st.columns(2)
@@ -97,38 +103,57 @@ try:
                     
                     st.markdown("#### 📋 本班級上課紀錄")
 
-                    # 三重條件精準篩選個人點名紀錄 (身分證 + 類別 + 班別)
-                    p_att = df_att[
-                        (df_att['身分證字號'].astype(str).str.upper() == user_id) & 
-                        (df_att['類別'] == student_cat) & 
-                        (df_att['班別'] == student_class)
-                    ].copy()
+                    # --- 智能容錯篩選點名紀錄 ---
+                    att_filter = (df_att['身分證字號'].astype(str).str.upper() == user_id)
+                    if '類別' in df_att.columns and student_cat:
+                        att_filter &= (df_att['類別'] == student_cat)
+                    if '班別' in df_att.columns and student_class:
+                        att_filter &= (df_att['班別'] == student_class)
                     
-                    # 篩選對應的班級教學日誌 (類別 + 場地 + 班別)
-                    filtered_logs = df_log[
-                        (df_log['類別'] == student_cat) & 
-                        (df_log['場地'] == student_venue) & 
-                        (df_log['班別'] == student_class)
-                    ].copy()
+                    p_att = df_att[att_filter].copy()
                     
-                    filtered_logs = filtered_logs[['日期', '今日教學內容']].drop_duplicates(subset=['日期'])
+                    # --- 智能容錯篩選教學日誌 ---
+                    log_filter = pd.Series(True, index=df_log.index)
+                    if '類別' in df_log.columns and student_cat:
+                        log_filter &= (df_log['類別'] == student_cat)
+                    if '場地' in df_log.columns and student_venue:
+                        log_filter &= (df_log['場地'] == student_venue)
+                    if '班別' in df_log.columns and student_class:
+                        log_filter &= (df_log['班別'] == student_class)
+                    
+                    filtered_logs = df_log[log_filter].copy()
+                    if '日期' in filtered_logs.columns:
+                        filtered_logs = filtered_logs[['日期', '今日教學內容']].drop_duplicates(subset=['日期'])
 
                     # 合併點名與日誌
                     if not p_att.empty:
-                        merged_df = pd.merge(p_att, filtered_logs, on='日期', how='left')
+                        if '日期' in p_att.columns and '日期' in filtered_logs.columns:
+                            merged_df = pd.merge(p_att, filtered_logs, on='日期', how='left')
+                        else:
+                            merged_df = p_att
+                            merged_df['今日教學內容'] = "暫無日誌連結"
+                            
                         merged_df = merged_df.sort_values(by='日期', ascending=False)
 
                         for _, row in merged_df.iterrows():
-                            status_icon = "✅ 出席" if str(row['出席']).strip().upper() in ["1", "1.0", "TRUE", "Y", "YES"] else "❌ 未出席"
-                            log_text = str(row['今日教學內容']).strip() if pd.notna(row['今日教學內容']) else "今日教練尚未上傳班級教學重點"
-                            p_comment = str(row.get('個人評語', "")).strip() if pd.notna(row.get('個人評語')) else ""
+                            # 兼容 Y/N 或 1/0 的出席狀態
+                            is_present = str(row.get('出席', '')).strip().upper() in ["1", "1.0", "TRUE", "Y", "YES"]
+                            status_icon = "✅ 出席" if is_present else "❌ 未出席"
+                            
+                            log_text = str(row.get('今日教學內容', '')).strip()
+                            if not log_text or log_text == "nan":
+                                log_text = "今日教練尚未上傳班級教學重點"
+                                
+                            p_comment = str(row.get('個人評語', "")).strip()
+                            if p_comment == "nan":
+                                p_comment = ""
 
                             comment_html = ""
                             if p_comment:
                                 comment_html = f'<div style="margin-top:15px;padding:12px;background-color:#3d3d3d;border-radius:8px;border-left:5px solid #FFD700;"><div style="color:#FFD700;font-size:0.85rem;font-weight:bold;margin-bottom:5px;">💡 教練個人評語：</div><div style="color:#FFFFFF;font-size:1rem;line-height:1.5;white-space:pre-wrap;">{p_comment}</div></div>'
 
                             st.markdown(f"""
-                                <div class="record-box"><span>📅 {row['日期']}</span><span>{status_icon}</span></div>
+                                <div class="record-box"><span>📅 {row.get('日期', '未註明日期')}</span><span>{status_icon}</span></div>
                                 <div class="content-box">
                                 <div style="color:#AAAAAA;font-size:0.8rem;font-weight:bold;margin-bottom:8px;">🌟 班級教學重點：</div>
                                 <div style="color:#E0E0E0;white-space:pre-wrap;line-height:1.4;">{log_text}</div>
@@ -138,7 +163,7 @@ try:
                     else:
                         st.caption("ℹ️ 該項目目前尚無上課點名紀錄。")
         else:
-            st.error("❌ 查善資料，請核對身分證字號。")
+            st.error("❌ 查無資料，請核對身分證字號。")
 except Exception as e:
     st.error("⚠️ 系統讀取錯誤")
     st.exception(e)
