@@ -28,7 +28,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="custom-title"> EBT森態人查詢系統</div>', unsafe_allow_html=True)
+st.markdown('<div class="custom-title"> EB森態人查詢系統</div>', unsafe_allow_html=True)
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
